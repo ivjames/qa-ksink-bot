@@ -2,3 +2,6 @@ pytest
 playwright
 pytest-html
 requests
+fastapi
+uvicorn
+python-multipart
