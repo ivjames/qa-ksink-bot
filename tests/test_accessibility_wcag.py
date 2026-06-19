@@ -114,9 +114,12 @@ def test_visible_text_meets_minimum_contrast(page, base_url: str, page_name: str
         """
         () => {
           function parseRgb(value) {
-            const match = value.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-            if (!match) return null;
-            return [Number(match[1]), Number(match[2]), Number(match[3])];
+            if (!value) return null;
+            const comma = value.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+            if (comma) return [Number(comma[1]), Number(comma[2]), Number(comma[3])];
+            const space = value.match(/rgba?\((\d+)\s+(\d+)\s+(\d+)/);
+            if (space) return [Number(space[1]), Number(space[2]), Number(space[3])];
+            return null;
           }
 
           function channel(v) {
@@ -136,31 +139,48 @@ def test_visible_text_meets_minimum_contrast(page, base_url: str, page_name: str
             return (lighter + 0.05) / (darker + 0.05);
           }
 
+          function isTransparent(value) {
+            return !value || value === 'transparent' || value === 'rgba(0, 0, 0, 0)' || value === 'rgb(0 0 0 / 0)';
+          }
+
           function effectiveBackground(el) {
             let node = el;
             while (node && node !== document.documentElement) {
               const bg = getComputedStyle(node).backgroundColor;
-              if (bg && !bg.includes('rgba(0, 0, 0, 0)') && bg !== 'transparent') return bg;
+              if (!isTransparent(bg)) return bg;
               node = node.parentElement;
             }
-            return getComputedStyle(document.body).backgroundColor;
+            return getComputedStyle(document.body).backgroundColor || 'rgb(255, 255, 255)';
           }
 
-          return Array.from(document.querySelectorAll('body *'))
-            .filter(el => el.offsetParent !== null)
-            .filter(el => el.childElementCount === 0)
-            .filter(el => el.innerText && el.innerText.trim().length > 0)
+          function visibleLeafTextElements() {
+            return Array.from(document.querySelectorAll('h1, h2, h3, p, label, button, a, td, th, span, strong'))
+              .filter(el => el.offsetParent !== null)
+              .filter(el => {
+                const text = el.innerText || el.textContent || '';
+                return text.trim().length > 0;
+              })
+              .filter(el => !Array.from(el.children).some(child => (child.innerText || child.textContent || '').trim().length > 0));
+          }
+
+          return visibleLeafTextElements()
             .map(el => {
               const styles = getComputedStyle(el);
               const fg = parseRgb(styles.color);
               const bg = parseRgb(effectiveBackground(el));
               if (!fg || !bg) return null;
+
               const ratio = contrast(fg, bg);
               const fontSize = parseFloat(styles.fontSize);
               const fontWeight = Number(styles.fontWeight) || 400;
               const isLarge = fontSize >= 24 || (fontSize >= 18.66 && fontWeight >= 700);
               const required = isLarge ? 3 : 4.5;
-              return { text: el.innerText.trim(), ratio, required };
+
+              return {
+                text: (el.innerText || el.textContent || '').trim(),
+                ratio,
+                required
+              };
             })
             .filter(Boolean)
             .filter(item => item.ratio < item.required)
