@@ -11,8 +11,8 @@ from playwright.sync_api import Browser, Page, sync_playwright
 def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption("--base-url", action="store", default=os.getenv("BASE_URL", "http://localhost:5173"))
     parser.addoption("--api-url", action="store", default=os.getenv("API_URL", "http://localhost:8000/api"))
-    parser.addoption("--headed", action="store_true", default=os.getenv("HEADED", "true").lower() == "true")
-    parser.addoption("--slowmo", action="store", default=os.getenv("SLOW_MO", "250"))
+    parser.addoption("--headed", action="store_true", default=os.getenv("HEADED", "false").lower() == "true")
+    parser.addoption("--slowmo", action="store", default=os.getenv("SLOW_MO", "0"))
 
 
 def pytest_configure() -> None:
