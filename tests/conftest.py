@@ -44,3 +44,32 @@ def page(browser: Browser) -> Generator[Page, None, None]:
     page = browser.new_page(viewport={"width": 1366, "height": 900})
     yield page
     page.close()
+
+
+@pytest.fixture(scope="session")
+def api_login(api_url: str):
+    import requests
+
+    def _login(role: str) -> dict[str, str]:
+        response = requests.post(
+            f"{api_url}/auth/login",
+            json={"email": f"{role}@example.com", "password": "demo"},
+            timeout=5,
+        )
+        response.raise_for_status()
+        return {"Authorization": f"Bearer {response.json()['token']}"}
+
+    return _login
+
+
+@pytest.fixture()
+def ui_login(page: Page, base_url: str):
+    def _login(role: str) -> None:
+        page.goto(base_url)
+        page.get_by_test_id("nav-login").click()
+        page.get_by_test_id("login-email").fill(f"{role}@example.com")
+        page.get_by_test_id("login-password").fill("demo")
+        page.get_by_test_id("login-submit").click()
+        page.get_by_text(f"Signed in as {role}").wait_for(timeout=3000)
+
+    return _login

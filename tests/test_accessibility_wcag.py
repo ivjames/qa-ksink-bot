@@ -7,6 +7,8 @@ PAGES = [
     ("login", "nav-login", "Authentication Lab"),
     ("forms", "nav-forms", "Form Gauntlet"),
     ("grid", "nav-grid", "Data Grid Lab"),
+    ("orders", "nav-orders", "Orders Desk"),
+    ("upload", "nav-upload", "Upload Lab"),
     ("async", "nav-async", "Async Lab"),
 ]
 
